@@ -40,6 +40,13 @@ public struct Detection {
     public let style: Style
     public let range: Range<String.Index>
     public let level: Int
+    
+    public init(type: DetectionType, style: Style, range: Range<String.Index>, level: Int) {
+        self.type = type
+        self.style = style
+        self.range = range
+        self.level = level
+    }
 }
 
 public protocol AttributedTextProtocol {
