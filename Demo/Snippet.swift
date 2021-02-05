@@ -34,8 +34,6 @@ func stringWithTagsAndEmoji() -> NSAttributedString {
 func stringWithHashTagAndMention() -> NSAttributedString {
     
     let str = "#Hello @World!!!"
-        .styleHashtags(Style.font(.boldSystemFont(ofSize: 45)))
-        .styleMentions(Style.foregroundColor(.red))
         .attributedString
     return str
 }
@@ -49,7 +47,6 @@ func stringWithPhone() -> NSAttributedString {
 
 func stringWithLink() -> NSAttributedString {
     let str = "Check this http://google.com"
-        .styleLinks(Style.foregroundColor(.blue))
         .attributedString
     return str
 }
@@ -72,9 +69,6 @@ func stringWithManyDetectables() -> NSAttributedString {
     
     let str = "@all I found <u>really</u> nice framework to manage attributed strings. It is called <b>Atributika</b>. Call me if you want to know more (123)456-7890 #swift #nsattributedstring https://github.com/psharanda/Atributika"
         .style(tags: u, b)
-        .styleMentions(mentions)
-        .styleHashtags(links)
-        .styleLinks(links)
         .stylePhoneNumbers(phoneNumbers)
         .styleAll(all)
         .attributedString
@@ -119,7 +113,7 @@ func stringWithTagAndHashtag() -> NSAttributedString {
     let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [NSAttributedString.DocumentReadingOptionKey.documentType: NSAttributedString.DocumentType.html,NSAttributedString.DocumentReadingOptionKey.characterEncoding: String.Encoding.utf8.rawValue]
     
     let htmlAttrString = try! NSAttributedString(data: data!, options: options, documentAttributes: nil)
-    let result = htmlAttrString.styleHashtags(Style.foregroundColor(.blue)).attributedString
+    let result = htmlAttrString.attributedString
     return result
 }
 

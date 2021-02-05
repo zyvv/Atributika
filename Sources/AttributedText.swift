@@ -26,8 +26,8 @@ import Foundation
 
 public enum DetectionType {
     case tag(Tag)
-    case hashtag(String)
-    case mention(String)
+    case hashtag(String, String)
+    case mention(String, URL)
     case regex(String)
     case phoneNumber(String)
     case link(URL)
@@ -98,23 +98,33 @@ public final class AttributedText: AttributedTextProtocol {
 
 extension AttributedTextProtocol {
     
+    public func style(hashtagStyle: Style, mentionStyle: Style, linkStyle: Style) -> AttributedText {
+        let (string, tagsInfo) = string.detectTags(transformers:  [TagTransformer.brTransformer])
+        var ds: [Detection] = []
+        tagsInfo.forEach { t in
+            if t.tag.name != "a" { return }
+            guard let href = t.tag.attributes["href"],
+                  let urlString = href.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+            let detectionText = String(string[t.range])
+            if let url = URL(string: urlString),
+               let eleClass = t.tag.attributes["class"],
+               eleClass == "former" {
+                let lowerBound = string.index(t.range.lowerBound, offsetBy: -1)
+                ds.append(Detection(type: .mention(detectionText, url), style: mentionStyle, range: lowerBound..<t.range.upperBound, level: t.level))
+            } else if urlString.starts(with: "/q/") {
+                let lowerBound = string.index(t.range.lowerBound, offsetBy: -1)
+                let upperBound = string.index(t.range.upperBound, offsetBy: 1)
+                ds.append(Detection(type: .hashtag(detectionText, urlString), style: hashtagStyle, range: lowerBound..<upperBound, level: t.level))
+            } else if let url = URL(string: urlString) {
+                ds.append(Detection(type: .link(url), style: linkStyle, range: t.range, level: t.level))
+            }
+        }
+        return AttributedText(string: string, detections: ds, baseStyle: baseStyle).styleLinks(linkStyle)
+    }
+    
     /// style the whole string
     public func styleAll(_ style: Style) -> AttributedText {
         return AttributedText(string: string, detections: detections, baseStyle: baseStyle.merged(with: style))
-    }
-    
-    /// style things like #xcode #mentions
-    public func styleHashtags(_ style: Style) -> AttributedText {
-        let ranges = string.detectHashTags()
-        let ds = ranges.map { Detection(type: .hashtag(String(string[(string.index($0.lowerBound, offsetBy: 1))..<$0.upperBound])), style: style, range: $0, level: Int.max) }
-        return AttributedText(string: string, detections: detections + ds, baseStyle: baseStyle)
-    }
-    
-    /// style things like @John @all
-    public func styleMentions(_ style: Style) -> AttributedText {
-        let ranges = string.detectMentions()
-        let ds = ranges.map { Detection(type: .mention(String(string[(string.index($0.lowerBound, offsetBy: 1))..<$0.upperBound])), style: style, range: $0, level: Int.max) }
-        return AttributedText(string: string, detections: detections + ds, baseStyle: baseStyle)
     }
     
     public func style(regex: String, options: NSRegularExpression.Options = [], style: Style) -> AttributedText {
@@ -135,7 +145,12 @@ extension AttributedTextProtocol {
         return AttributedText(string: string, detections: detections + ds, baseStyle: baseStyle)
     }
     
-    public func styleLinks(_ style: Style) -> AttributedText {
+    public func style(range: Range<String.Index>, style: Style) -> AttributedText {
+        let d = Detection(type: .range, style: style, range: range, level: Int.max)
+        return AttributedText(string: string, detections: detections + [d], baseStyle: baseStyle)
+    }
+    
+    private func styleLinks(_ style: Style) -> AttributedText {
         let ranges = string.detect(textCheckingTypes: [.link])
         
         #if swift(>=4.1)
@@ -149,11 +164,6 @@ extension AttributedTextProtocol {
         #endif
         
         return AttributedText(string: string, detections: detections + ds, baseStyle: baseStyle)
-    }
-    
-    public func style(range: Range<String.Index>, style: Style) -> AttributedText {
-        let d = Detection(type: .range, style: style, range: range, level: Int.max)
-        return AttributedText(string: string, detections: detections + [d], baseStyle: baseStyle)
     }
 }
 
@@ -173,7 +183,6 @@ extension String: AttributedTextProtocol {
     
     public func style(tags: [Style], transformers: [TagTransformer] = [TagTransformer.brTransformer], tuner: (Style, Tag) -> Style = { s, _ in return  s}) -> AttributedText {
         let (string, tagsInfo) = detectTags(transformers: transformers)
-        
         var ds: [Detection] = []
         
         tagsInfo.forEach { t in
@@ -184,7 +193,6 @@ extension String: AttributedTextProtocol {
                 ds.append(Detection(type: .tag(t.tag), style: Style(), range: t.range, level: t.level))
             }
         }
-        
         return AttributedText(string: string, detections: ds, baseStyle: baseStyle)
     }
     

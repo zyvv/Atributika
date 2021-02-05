@@ -212,7 +212,7 @@ open class AttributedLabel: UIView {
     @objc private func handleDetectionAreaButtonClick(_ sender: DetectionAreaButton) {
         onClick?(self, sender.detection)
     }
-    
+        
     //MARK: - state
     
     private struct State {
