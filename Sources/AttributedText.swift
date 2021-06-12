@@ -99,21 +99,21 @@ public final class AttributedText: AttributedTextProtocol {
 extension AttributedTextProtocol {
     
     public func style(hashtagStyle: Style, mentionStyle: Style, linkStyle: Style) -> AttributedText {
-        let (s, tagsInfo) = string.detectTags(transformers:  [TagTransformer.brTransformer])
+        let (_, tagsInfo) = string.detectTags(transformers:  [TagTransformer.brTransformer])
         var ds: [Detection] = []
         tagsInfo.forEach { t in
             if t.tag.name != "a" { return }
             guard let href = t.tag.attributes["href"],
                   let urlString = href.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
-            let detectionText = String(s[t.range])
+            let detectionText = String(string[t.range])
             if let url = URL(string: urlString),
                let eleClass = t.tag.attributes["class"],
                eleClass == "former" {
-                let lowerBound = s.index(t.range.lowerBound, offsetBy: -1)
+                let lowerBound = string.index(t.range.lowerBound, offsetBy: -1)
                 ds.append(Detection(type: .mention(detectionText, url), style: mentionStyle, range: lowerBound..<t.range.upperBound, level: t.level))
             } else if urlString.starts(with: "/q/") {
-                let lowerBound = s.index(t.range.lowerBound, offsetBy: -1)
-                let upperBound = s.index(t.range.upperBound, offsetBy: 1)
+                let lowerBound = string.index(t.range.lowerBound, offsetBy: -1)
+                let upperBound = string.index(t.range.upperBound, offsetBy: 1)
                 ds.append(Detection(type: .hashtag(detectionText, urlString), style: hashtagStyle, range: lowerBound..<upperBound, level: t.level))
             } else if let url = URL(string: urlString) {
                 ds.append(Detection(type: .link(url), style: linkStyle, range: t.range, level: t.level))
